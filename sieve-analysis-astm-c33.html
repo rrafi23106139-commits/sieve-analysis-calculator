@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sieve Analysis Report — ASTM C33</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+:root{
+  --bg:#0d1117;--panel:#161b22;--border:#30363d;
+  --gold:#f0a500;--green:#3fb950;--red:#ff7b72;--blue:#58a6ff;
+  --text:#e6edf3;--muted:#8b949e;--rowalt:#1c2128;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;padding:18px 14px 60px;}
+
+/* HEADER */
+.scr-hdr{text-align:center;margin-bottom:18px;}
+.badge-pill{display:inline-block;background:var(--gold);color:#000;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:2px;padding:3px 10px;border-radius:2px;margin-bottom:6px;}
+.scr-hdr h1{font-size:clamp(17px,3.5vw,26px);font-weight:700;letter-spacing:-.3px;}
+.scr-hdr p{color:var(--muted);font-size:11px;margin-top:4px;}
+
+/* WRAP & CARD */
+.wrap{max-width:990px;margin:0 auto;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+.card-hdr{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between;}
+.chl{display:flex;align-items:center;gap:8px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;}
+.ch{font-size:10.5px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);}
+
+/* META */
+.meta-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0;}
+.mc{padding:10px 14px;border-right:1px solid var(--border);}
+.mc:last-child{border-right:none;}
+.ml{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+.mi{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Inter',sans-serif;font-size:12px;padding:5px 8px;outline:none;transition:border-color .2s;}
+.mi:focus{border-color:var(--gold);}
+
+/* ══ MODE TOGGLE ══ */
+.mode-toggle{display:flex;gap:0;background:var(--bg);border:1px solid var(--border);border-radius:7px;overflow:hidden;}
+.mode-btn{flex:1;padding:8px 14px;border:none;background:transparent;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;transition:background .2s,color .2s;letter-spacing:.3px;}
+.mode-btn.active{background:var(--gold);color:#000;}
+.mode-hint{font-size:10px;color:var(--muted);padding:8px 16px 10px;border-top:1px solid var(--border);}
+
+/* SAMPLE MASS BAR */
+.sample-bar{display:grid;grid-template-columns:repeat(4,1fr);}
+@media(max-width:600px){.sample-bar{grid-template-columns:1fr 1fr;}}
+.sb{padding:11px 14px;border-right:1px solid var(--border);}
+.sb:last-child{border-right:none;}
+.sbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.sbi{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;padding:6px 8px;outline:none;transition:border-color .2s;}
+.sbi:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(240,165,0,.12);}
+.sbi::-webkit-inner-spin-button{opacity:.3;}
+.sbh{font-size:9px;color:var(--muted);margin-top:3px;}
+.derived-bar{display:flex;flex-wrap:wrap;border-top:1px solid var(--border);background:rgba(240,165,0,.03);}
+.db{flex:1;min-width:110px;padding:7px 14px;border-right:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.db:last-child{border-right:none;}
+.dk{font-size:10px;color:var(--muted);}
+.dv{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold);font-weight:700;}
+
+/* CHART */
+.chart-wrap{padding:14px 18px;height:300px;position:relative;overflow:visible;}
+.legend{display:flex;gap:12px;flex-wrap:wrap;}
+.leg{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);}
+.leg-line{width:16px;height:2.5px;border-radius:1px;}
+.leg-box{width:12px;height:8px;border-radius:2px;}
+
+/* KPI BAR */
+.kpi-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;}
+@media(max-width:560px){.kpi-bar{grid-template-columns:1fr;}}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 18px;text-align:center;}
+.kpi-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.kpi-val{font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;color:var(--gold);line-height:1;}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.4;}
+.gpill{display:inline-block;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:.4px;margin-bottom:4px;}
+.g-well{background:rgba(63,185,80,.14);color:var(--green);border:1px solid rgba(63,185,80,.3);}
+.g-gap {background:rgba(255,123,114,.14);color:var(--red);border:1px solid rgba(255,123,114,.3);}
+.g-poor{background:rgba(240,165,0,.14);color:var(--gold);border:1px solid rgba(240,165,0,.3);}
+.g-na  {background:rgba(139,148,158,.08);color:var(--muted);border:1px solid var(--border);}
+
+/* BOTTOM GRID */
+.bot-grid{display:grid;grid-template-columns:1fr 260px;gap:14px;align-items:start;}
+@media(max-width:700px){.bot-grid{grid-template-columns:1fr;}}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:11px;}
+thead th{background:var(--rowalt);color:var(--muted);font-size:8.5px;letter-spacing:1px;text-transform:uppercase;padding:8px 9px;text-align:center;border-bottom:1px solid var(--border);}
+thead th:first-child{text-align:left;}
+tbody tr{border-bottom:1px solid var(--border);}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:nth-child(even){background:var(--rowalt);}
+tbody tr:hover{background:rgba(240,165,0,.03);}
+td{padding:7px 8px;text-align:center;vertical-align:middle;}
+td:first-child{text-align:left;}
+.sno{font-size:12px;font-weight:700;color:var(--gold);}
+.smm{font-size:9px;color:var(--muted);}
+.ti{width:80px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 5px;text-align:center;outline:none;transition:border-color .18s;}
+.ti:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(240,165,0,.1);}
+.ti::-webkit-inner-spin-button{opacity:.3;}
+.ti-auto{background:rgba(240,165,0,.07);border-color:rgba(240,165,0,.3);color:var(--gold);}
+.cr{color:var(--blue);}
+.cp{color:var(--green);}
+.pf{display:inline-block;padding:2px 6px;border-radius:3px;font-size:8.5px;font-weight:700;letter-spacing:.5px;}
+.pf.pass{background:rgba(63,185,80,.14);color:var(--green);}
+.pf.fail{background:rgba(255,123,114,.14);color:var(--red);}
+.pf.na{background:rgba(139,148,158,.08);color:var(--muted);}
+.tot-row td{background:rgba(240,165,0,.07)!important;font-weight:700;color:var(--gold)!important;}
+.warn-row{display:none;}
+.warn-row td{padding:5px 9px;font-size:9px;color:var(--red);text-align:center;background:rgba(255,123,114,.05)!important;}
+
+/* hidden column utility */
+.col-mass{} .col-pct{}
+
+/* BUTTONS */
+.btn-row{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;}
+button{flex:1;padding:8px 10px;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.4px;transition:opacity .15s,transform .1s;}
+button:hover{opacity:.84;}
+button:active{transform:scale(.97);}
+.btn-reset{background:var(--border);color:var(--text);}
+.btn-print{background:var(--gold);color:#000;}
+
+/* STATS */
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;border-bottom:1px solid var(--border);}
+.stat-row:last-child{border-bottom:none;}
+.sk{font-size:10px;color:var(--muted);}
+.sv{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;}
+.info-box{padding:11px 14px;}
+.ib-t{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+.ib-r{font-size:10px;color:var(--muted);line-height:1.9;}
+
+@keyframes pulse{0%{opacity:.45;transform:scale(.95)}100%{opacity:1;transform:scale(1)}}
+.pulse{animation:pulse .26s ease-out;}
+
+/* ══════════ PRINT STYLES ══════════ */
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body{background:#fff!important;color:#111!important;font-family:Arial,Helvetica,sans-serif;padding:0;margin:0;font-size:11px;}
+  .no-print,.scr-hdr,.btn-row,.mode-toggle,.mode-hint{display:none!important;}
+  .print-only{display:block!important;}
+  .p-flex{display:flex!important;}
+  .card,.kpi{background:#fff!important;border:1px solid #d0d0d0!important;border-radius:4px!important;box-shadow:none!important;break-inside:avoid;margin-bottom:10px!important;overflow:visible!important;}
+  .wrap{max-width:100%!important;padding:0 6px;}
+  .ch,.ml,.sbl,.ib-t,.kpi-lbl{color:#555!important;}
+  .sno{color:#8B6914!important;}
+  .kpi-val,.dv,.sv{color:#8B6914!important;}
+  .cr{color:#1a5fbd!important;}
+  .cp{color:#176317!important;}
+  td,th{color:#111!important;font-size:10px!important;}
+  thead th{background:#f5f5f5!important;color:#444!important;}
+  tbody tr:nth-child(even){background:#fafafa!important;}
+  .tot-row td{background:#fffaed!important;color:#8B6914!important;}
+  .badge-pill{background:#8B6914!important;color:#fff!important;}
+  .gpill.g-well{background:#d4edda!important;color:#155724!important;border-color:#c3e6cb!important;}
+  .gpill.g-gap{background:#f8d7da!important;color:#721c24!important;border-color:#f5c6cb!important;}
+  .gpill.g-poor{background:#fff3cd!important;color:#856404!important;border-color:#ffeeba!important;}
+  .pf.pass{background:#d4edda!important;color:#155724!important;}
+  .pf.fail{background:#f8d7da!important;color:#721c24!important;}
+  .kpi-bar{grid-template-columns:repeat(3,1fr)!important;gap:8px!important;}
+  .kpi-val{font-size:26px!important;}
+  .chart-wrap{height:230px!important;}
+  .bot-grid{grid-template-columns:1fr 210px!important;gap:10px!important;}
+  .meta-row{grid-template-columns:repeat(4,1fr)!important;}
+  .sample-bar{grid-template-columns:repeat(4,1fr)!important;}
+  .ti{border:1px solid #ccc!important;background:#fafafa!important;color:#111!important;}
+  .ti-auto{background:#fffaed!important;color:#8B6914!important;border-color:#e8c94a!important;}
+  .ib-r{color:#555!important;}
+  .derived-bar{background:#fffdf5!important;}
+
+  /* ── Fix: input section black boxes ── */
+  .sbi{background:#fff!important;color:#111!important;border:1px solid #ccc!important;}
+  .sb{background:#fff!important;}
+  .sb:last-child{background:#fffaed!important;}
+  .sbl{color:#555!important;}
+  .sbh{color:#888!important;}
+  select.sbi{color:#111!important;background:#fff!important;}
+  .dv{color:#8B6914!important;}
+  .dk{color:#555!important;}
+  .db{background:#fffdf5!important;}
+  .mi{background:#fafafa!important;color:#111!important;border:1px solid #ccc!important;}
+  .ml{color:#555!important;}
+  .dot{background:#8B6914!important;}
+  .card-hdr{background:#f9f6ef!important;}
+
+  /* ── Fix: chart full figure ── */
+  .chart-wrap{height:280px!important;padding:10px 14px!important;}
+  canvas{max-height:260px!important;}
+
+  /* ── Fix: page layout to fit everything ── */
+  @page{size:A4 portrait;margin:12mm 10mm;}
+  .wrap{padding:0!important;}
+  .bot-grid{grid-template-columns:1fr 190px!important;}
+  .kpi-val{font-size:22px!important;}
+}
+.print-only{display:none;}
+</style>
+</head>
+<body>
+
+<!-- ══ PRINT HEADER (hidden on screen) ══ -->
+<div class="print-only" id="pHeader" style="margin-bottom:12px;">
+  <div class="p-flex" id="pTop" style="display:none;align-items:flex-start;justify-content:space-between;border-bottom:3px solid #8B6914;padding-bottom:10px;margin-bottom:10px;gap:12px;">
+    <div>
+      <div style="font-size:8px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:3px;">Fine Aggregate Laboratory Report · ASTM C33 / C136</div>
+      <div style="font-size:18px;font-weight:700;color:#8B6914;letter-spacing:-.4px;">Sieve Analysis &amp; Fineness Modulus</div>
+      <div style="font-size:11px;color:#333;margin-top:4px;">Standard: ASTM C33 (Fine Aggregate) · ASTM C136 (Sieve Analysis)</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:13px;font-weight:700;color:#111;">MD R Rafi</div>
+      <div style="font-size:10px;color:#444;margin-top:2px;">Department of Civil Engineering</div>
+      <div style="font-size:10px;color:#444;">IUBAT — International University of</div>
+      <div style="font-size:10px;color:#444;">Business Agriculture and Technology</div>
+    </div>
+  </div>
+  <div class="p-flex" id="pMeta" style="display:none;gap:0;background:#f9f6ef;border:1px solid #e0d4b0;border-radius:4px;overflow:hidden;margin-bottom:12px;">
+    <div style="flex:1;padding:7px 12px;border-right:1px solid #e0d4b0;"><div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">File / Report No.</div><div style="font-family:'Courier New',monospace;font-size:13px;font-weight:700;color:#8B6914;" id="pFile">—</div></div>
+    <div style="flex:1;padding:7px 12px;border-right:1px solid #e0d4b0;"><div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Project / Sample ID</div><div style="font-size:11px;font-weight:600;color:#111;" id="pProj">—</div></div>
+    <div style="flex:1;padding:7px 12px;border-right:1px solid #e0d4b0;"><div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Test Date</div><div style="font-size:11px;font-weight:600;color:#111;" id="pDate">—</div></div>
+    <div style="flex:1;padding:7px 12px;"><div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Input Mode</div><div style="font-size:11px;font-weight:600;color:#111;" id="pMode">—</div></div>
+  </div>
+</div>
+
+<!-- ══ SCREEN HEADER ══ -->
+<div class="scr-hdr no-print">
+  <div class="badge-pill">ASTM C33 / C136</div>
+  <h1>Fine Aggregate Sieve Analysis</h1>
+  <p>Gradation · Fineness Modulus · Live Chart · PDF Report</p>
+</div>
+
+<div class="wrap">
+
+<!-- ══ REPORT INFO ══ -->
+<div class="card no-print">
+  <div class="card-hdr"><div class="chl"><div class="dot"></div><span class="ch">Report Information</span></div></div>
+  <div class="meta-row">
+    <div class="mc"><div class="ml">File / Report Name</div><input class="mi" id="mFile" type="text" placeholder="e.g. SA-001-2026"><div style="font-size:9px;color:var(--muted);margin-top:3px;">Used as PDF filename</div></div>
+    <div class="mc"><div class="ml">Project / Sample ID</div><input class="mi" id="mProj" type="text" placeholder="e.g. Site B — Batch 3"></div>
+    <div class="mc"><div class="ml">Test Date</div><input class="mi" id="mDate" type="date"></div>
+    <div class="mc" style="background:rgba(240,165,0,.04);border-left:2px solid var(--gold);">
+      <div class="ml" style="color:var(--gold);">Author</div>
+      <div style="font-size:12px;font-weight:700;color:var(--text);padding:3px 0 1px;">MD R Rafi</div>
+      <div style="font-size:9px;color:var(--muted);">Dept. of Civil Engineering, IUBAT</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ INPUT MODE TOGGLE ══ -->
+<div class="card">
+  <div class="card-hdr">
+    <div class="chl"><div class="dot"></div><span class="ch">Input Mode — Choose How to Enter Data</span></div>
+    <div class="mode-toggle no-print">
+      <button class="mode-btn active" id="btnModeA" onclick="setMode('A')">
+        📊 Mode A — Enter % Retained
+      </button>
+      <button class="mode-btn" id="btnModeB" onclick="setMode('B')">
+        ⚖ Mode B — Enter Mass (kg / g)
+      </button>
+    </div>
+  </div>
+
+  <!-- ── SAMPLE MASS (always visible) ── -->
+  <div class="sample-bar" id="sampleBar">
+    <div class="sb">
+      <div class="sbl">Total Sample — SSD (kg)</div>
+      <input class="sbi" id="massSSD" type="number" min="0" step="0.0001" placeholder="e.g. 0.5000" oninput="onSample('SSD')">
+      <div class="sbh">Saturated Surface-Dry mass</div>
+    </div>
+    <div class="sb">
+      <div class="sbl">Total Sample — OD (kg)</div>
+      <input class="sbi" id="massOD" type="number" min="0" step="0.0001" placeholder="e.g. 0.4940" oninput="onSample('OD')">
+      <div class="sbh">Oven-Dry · base for sieve calc</div>
+    </div>
+    <div class="sb">
+      <div class="sbl">Absorption Capacity (%)</div>
+      <input class="sbi" id="absorp" type="number" min="0" max="30" step="0.001" placeholder="e.g. 1.215" oninput="onSample('ABS')">
+      <div class="sbh">AC = (SSD−OD)/OD × 100</div>
+    </div>
+    <div class="sb" style="background:rgba(240,165,0,.04);">
+      <div class="sbl" style="color:var(--gold);">Unit for Mass Input</div>
+      <select class="sbi" id="unitSel" onchange="onUnitChange()" style="font-size:12px;cursor:pointer;">
+        <option value="kg">Kilogram (kg)</option>
+        <option value="g">Gram (g)</option>
+      </select>
+      <div class="sbh" id="unitHint">Used in Mode B mass column</div>
+    </div>
+  </div>
+
+  <div class="derived-bar">
+    <div class="db"><span class="dk">OD mass (base)</span><span class="dv" id="dOD">—</span></div>
+    <div class="db"><span class="dk">SSD mass</span><span class="dv" id="dSSD">—</span></div>
+    <div class="db"><span class="dk">Absorption</span><span class="dv" id="dAbs">—</span></div>
+    <div class="db"><span class="dk">Water absorbed</span><span class="dv" id="dWater">—</span></div>
+  </div>
+
+  <!-- ── MODE HINTS ── -->
+  <div class="mode-hint no-print" id="hintA">
+    <b style="color:var(--gold);">Mode A:</b> Type the <b>% retained</b> for each sieve below.
+    If you also entered the OD mass above, the mass per sieve will be auto-calculated.
+    FM and gradation update live.
+  </div>
+  <div class="mode-hint no-print" id="hintB" style="display:none;">
+    <b style="color:var(--gold);">Mode B:</b> Type the <b>mass retained</b> per sieve (in your chosen unit above).
+    % retained, cumulative %, FM and gradation will all be calculated automatically.
+    You can also enter OD mass above to cross-check totals.
+  </div>
+</div>
+
+<!-- ══ LIVE CHART ══ -->
+<div class="card">
+  <div class="card-hdr">
+    <div class="chl"><div class="dot"></div><span class="ch">Gradation Curve — Live</span></div>
+    <div class="legend no-print">
+      <div class="leg"><div class="leg-line" style="background:#f0a500;height:3px;"></div>Your Sample</div>
+      <div class="leg"><div class="leg-line" style="border-top:2px dashed rgba(63,185,80,.6);height:0;width:16px;"></div>ASTM C33 Limits</div>
+      <div class="leg"><div class="leg-box" style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);"></div>Conforming Zone</div>
+    </div>
+  </div>
+  <div class="chart-wrap"><canvas id="gradChart"></canvas></div>
+</div>
+
+<!-- ══ KPI BAR ══ -->
+<div class="kpi-bar">
+  <div class="kpi">
+    <div class="kpi-lbl">Fineness Modulus (FM)</div>
+    <div class="kpi-val" id="fmVal">—</div>
+    <div class="kpi-sub" id="fmSub">Enter data in the table below</div>
+  </div>
+  <div class="kpi" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+    <div class="kpi-lbl">Grading Classification</div>
+    <span class="gpill g-na" id="gradeLabel">—</span>
+    <div class="kpi-sub" id="gradeDesc">—</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-lbl">ASTM C33 Compliance</div>
+    <div class="kpi-val" id="compVal" style="font-size:26px;">—</div>
+    <div class="kpi-sub" id="compSub">—</div>
+  </div>
+</div>
+
+<!-- ══ BOTTOM: TABLE + STATS ══ -->
+<div class="bot-grid">
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="chl"><div class="dot"></div><span class="ch" id="tableTitle">Sieve Data — Enter % Retained (Mode A)</span></div>
+    </div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Sieve</th>
+          <th>Aperture</th>
+          <!-- Mode A: user types %, mass is auto -->
+          <!-- Mode B: user types mass, % is auto -->
+          <th id="th-mass">Mass Ret. <span id="th-unit">(kg)</span></th>
+          <th>Ret. (%)</th>
+          <th>Cum. Ret. (%)</th>
+          <th>Cum. Pass (%)</th>
+          <th>ASTM C33</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+      <tfoot>
+        <tr class="tot-row">
+          <td colspan="2">TOTAL</td>
+          <td id="tMass">—</td>
+          <td id="tPct">—</td>
+          <td colspan="2" style="font-size:9px;color:var(--muted);font-weight:400;">Σ ret. = 100%</td>
+          <td colspan="2" id="tStatus">—</td>
+        </tr>
+        <tr class="warn-row" id="warnRow">
+          <td colspan="8">⚠ Total retained ≠ 100% — please check your inputs</td>
+        </tr>
+      </tfoot>
+    </table>
+    </div>
+    <div class="btn-row no-print">
+      <button class="btn-reset" onclick="resetAll()">↺ Reset All</button>
+      <button class="btn-print" onclick="printReport()">⬇ Print / Save as PDF</button>
+    </div>
+  </div>
+
+  <!-- STATS PANEL -->
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    <div class="card">
+      <div class="card-hdr"><div class="chl"><div class="dot"></div><span class="ch">Parameters</span></div></div>
+      <div class="stat-row"><span class="sk">FM Sieves Sum</span><span class="sv" id="sSum">—</span></div>
+      <div class="stat-row"><span class="sk">D10 (Effective Size)</span><span class="sv" id="sD10">—</span></div>
+      <div class="stat-row"><span class="sk">D30</span><span class="sv" id="sD30">—</span></div>
+      <div class="stat-row"><span class="sk">D60</span><span class="sv" id="sD60">—</span></div>
+      <div class="stat-row"><span class="sk">Cu = D60 / D10</span><span class="sv" id="sCu">—</span></div>
+      <div class="stat-row"><span class="sk">Cc = D30² / (D60·D10)</span><span class="sv" id="sCc">—</span></div>
+    </div>
+    <div class="card">
+      <div class="info-box">
+        <div class="ib-t">FM Interpretation</div>
+        <div class="ib-r">
+          <div>FM &lt; 2.3 → Very Fine Sand</div>
+          <div style="color:var(--green);">FM 2.3–3.1 → ASTM C33 ✓</div>
+          <div>FM &gt; 3.1 → Very Coarse Sand</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="info-box">
+        <div class="ib-t">Absorption</div>
+        <div class="ib-r">AC (%) = (M<sub>SSD</sub>−M<sub>OD</sub>)/M<sub>OD</sub>×100<br>
+        Enter any 2 → 3rd auto-fills.<br>
+        Sieve calc uses <span style="color:var(--gold);">OD mass</span> as base.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- bot-grid -->
+
+<!-- PRINT FOOTER -->
+<div class="print-only" id="pFoot" style="display:none;margin-top:14px;border-top:1px solid #ccc;padding-top:7px;font-size:9px;color:#888;justify-content:space-between;">
+  <span>ASTM C33/C136 · Fine Aggregate Sieve Analysis · IUBAT — Dept. of Civil Engineering</span>
+  <span id="pFootR">—</span>
+</div>
+
+</div><!-- wrap -->
+
+<script>
+// ══ CONSTANTS ══════════════════════════════════════════
+const SIEVES=[
+  {no:'#4',  mm:4.750, lo:95,  hi:100},
+  {no:'#8',  mm:2.360, lo:80,  hi:100},
+  {no:'#16', mm:1.180, lo:50,  hi:85 },
+  {no:'#30', mm:0.600, lo:25,  hi:60 },
+  {no:'#50', mm:0.300, lo:5,   hi:30 },
+  {no:'#100',mm:0.150, lo:0,   hi:10 },
+  {no:'Pan', mm:0,     lo:null,hi:null},
+];
+const N=SIEVES.length;
+let currentMode='A'; // 'A'=% input, 'B'=mass input
+let lastOD=null;
+let currentUnit='kg'; // 'kg' or 'g'
+
+// ══ BUILD TABLE ════════════════════════════════════════
+const tbody=document.getElementById('tbody');
+SIEVES.forEach((s,i)=>{
+  const range=s.lo!==null?`${s.lo}–${s.hi}%`:'—';
+  const tr=document.createElement('tr');
+  tr.innerHTML=`
+    <td><span class="sno">${s.no}</span></td>
+    <td class="smm">${s.mm>0?s.mm+' mm':'bottom'}</td>
+    <td id="td-mass-${i}">
+      <input class="ti ti-auto" id="massInp${i}" type="number" min="0" step="0.0001"
+             placeholder="auto" readonly tabindex="-1" oninput="onMassInput(${i})">
+    </td>
+    <td>
+      <input class="ti" id="pctInp${i}" type="number" min="0" max="100" step="0.01"
+             placeholder="0.00" oninput="onPctInput(${i})">
+    </td>
+    <td class="cr" id="cr${i}">—</td>
+    <td class="cp" id="cp${i}">—</td>
+    <td style="font-size:9px;color:var(--muted);">${range}</td>
+    <td id="st${i}"><span class="pf na">—</span></td>`;
+  tbody.appendChild(tr);
+});
+
+// ══ CHART ══════════════════════════════════════════════
+const ASTM_HI=[100,100,85,60,30,10,0];
+const ASTM_LO=[95, 80, 50,25, 5, 0, 0];
+const chart=new Chart(document.getElementById('gradChart'),{
+  type:'line',
+  data:{
+    labels:SIEVES.map(s=>s.no),
+    datasets:[
+      {label:'ASTM Upper',data:ASTM_HI,borderColor:'rgba(63,185,80,.5)',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false,tension:.1,order:3},
+      {label:'ASTM Lower',data:ASTM_LO,borderColor:'rgba(63,185,80,.5)',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:'-1',backgroundColor:'rgba(63,185,80,.07)',tension:.1,order:3},
+      {label:'Your Sample',data:new Array(N).fill(null),borderColor:'#f0a500',backgroundColor:'rgba(240,165,0,.08)',borderWidth:2.5,pointRadius:5.5,pointBackgroundColor:'#f0a500',pointBorderColor:'#0d1117',pointBorderWidth:2,fill:false,tension:.25,order:1,spanGaps:false},
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    animation:{duration:280,easing:'easeInOutQuart'},
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{display:false},
+      tooltip:{backgroundColor:'#1c2128',borderColor:'#30363d',borderWidth:1,titleColor:'#e6edf3',bodyColor:'#8b949e',padding:10,
+        callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y!==null?c.parsed.y.toFixed(1)+'%':'—'}`}
+      }
+    },
+    scales:{
+      x:{grid:{color:'rgba(48,54,61,.8)'},ticks:{color:'#8b949e',font:{family:'JetBrains Mono',size:11}}},
+      y:{min:0,max:100,grid:{color:'rgba(48,54,61,.8)'},
+        ticks:{color:'#8b949e',font:{family:'JetBrains Mono',size:10},stepSize:20,callback:v=>v+'%'},
+        title:{display:true,text:'Cumulative % Passing',color:'#8b949e',font:{size:10}}
+      }
+    }
+  }
+});
+
+// ══ MODE SWITCHING ══════════════════════════════════════
+function setMode(m){
+  currentMode=m;
+  document.getElementById('btnModeA').classList.toggle('active',m==='A');
+  document.getElementById('btnModeB').classList.toggle('active',m==='B');
+  document.getElementById('hintA').style.display=m==='A'?'':'none';
+  document.getElementById('hintB').style.display=m==='B'?'':'none';
+  document.getElementById('tableTitle').textContent=
+    m==='A'?'Sieve Data — Enter % Retained (Mode A)':
+            'Sieve Data — Enter Mass Retained (Mode B)';
+
+  SIEVES.forEach((_,i)=>{
+    const mI=document.getElementById('massInp'+i);
+    const pI=document.getElementById('pctInp'+i);
+    if(m==='A'){
+      // % is user input; mass is auto (read-only, styled gold)
+      pI.readOnly=false; pI.tabIndex=0; pI.classList.remove('ti-auto');
+      mI.readOnly=true;  mI.tabIndex=-1; mI.classList.add('ti-auto');
+      mI.placeholder='auto';
+    } else {
+      // mass is user input; % is auto
+      mI.readOnly=false; mI.tabIndex=0; mI.classList.remove('ti-auto');
+      pI.readOnly=true;  pI.tabIndex=-1; pI.classList.add('ti-auto');
+      pI.placeholder='auto';
+    }
+  });
+  clearTable();
+}
+
+function onUnitChange(){
+  currentUnit=document.getElementById('unitSel').value;
+  document.getElementById('th-unit').textContent='('+currentUnit+')';
+  document.getElementById('unitHint').textContent='Used in Mode B mass column';
+  // re-derive mass column if OD known and mode A
+  if(currentMode==='A' && lastOD) repopulateMassCol();
+  else clearTable();
+}
+
+// ══ SAMPLE MASS SECTION ════════════════════════════════
+function onSample(changed){
+  const ssd =parseFloat(document.getElementById('massSSD').value);
+  const od  =parseFloat(document.getElementById('massOD').value);
+  const abs =parseFloat(document.getElementById('absorp').value);
+  const okS =!isNaN(ssd)&&ssd>0;
+  const okO =!isNaN(od) &&od>0;
+  const okA =!isNaN(abs)&&abs>=0;
+
+  let rOD=null,rSSD=null,rAbs=null;
+  if(okO&&okS){rOD=od;rSSD=ssd;rAbs=((ssd-od)/od)*100;softSet('absorp',rAbs.toFixed(4));}
+  else if(okO&&okA){rOD=od;rAbs=abs;rSSD=od*(1+abs/100);softSet('massSSD',rSSD.toFixed(4));}
+  else if(okS&&okA){rAbs=abs;rSSD=ssd;rOD=ssd/(1+abs/100);softSet('massOD',rOD.toFixed(4));}
+  else if(okO){rOD=od;}
+  else if(okS){rSSD=ssd;}
+
+  lastOD=rOD;
+  const fac=currentUnit==='g'?1000:1;
+  document.getElementById('dOD').textContent  =rOD  ?(rOD*fac).toFixed(currentUnit==='g'?1:4)+' '+currentUnit:'—';
+  document.getElementById('dSSD').textContent =rSSD ?(rSSD*fac).toFixed(currentUnit==='g'?1:4)+' '+currentUnit:'—';
+  document.getElementById('dAbs').textContent =rAbs!=null?rAbs.toFixed(3)+'%':'—';
+  const wg=rOD&&rSSD?((rSSD-rOD)*1000).toFixed(1):null;
+  document.getElementById('dWater').textContent=wg?wg+' g':'—';
+
+  // If Mode A: auto-fill mass col from existing % inputs
+  if(currentMode==='A'&&rOD) repopulateMassCol();
+  // If Mode B: recalc % from existing mass inputs
+  if(currentMode==='B'&&rOD) repopulatePctCol();
+  recalc();
+}
+
+function softSet(id,val){
+  const el=document.getElementById(id);
+  if(document.activeElement!==el) el.value=val;
+}
+
+function repopulateMassCol(){
+  // Mode A → fill mass from stored %
+  const fac=currentUnit==='g'?1000:1;
+  SIEVES.forEach((_,i)=>{
+    const p=parseFloat(document.getElementById('pctInp'+i).value);
+    if(!isNaN(p)&&lastOD){
+      document.getElementById('massInp'+i).value=((p/100)*lastOD*fac).toFixed(currentUnit==='g'?2:5);
+    }
+  });
+}
+
+function repopulatePctCol(){
+  // Mode B → fill % from stored mass
+  const fac=currentUnit==='g'?1000:1;
+  SIEVES.forEach((_,i)=>{
+    const m=parseFloat(document.getElementById('massInp'+i).value);
+    if(!isNaN(m)&&lastOD){
+      document.getElementById('pctInp'+i).value=((m/(lastOD*fac))*100).toFixed(3);
+    }
+  });
+}
+
+// ══ INPUT HANDLERS ══════════════════════════════════════
+
+// Mode A: user typed a % → auto-calc mass
+function onPctInput(i){
+  if(currentMode!=='A') return; // in B, % is read-only
+  const p=parseFloat(document.getElementById('pctInp'+i).value);
+  if(!isNaN(p)&&lastOD){
+    const fac=currentUnit==='g'?1000:1;
+    document.getElementById('massInp'+i).value=((p/100)*lastOD*fac).toFixed(currentUnit==='g'?2:5);
+  } else {
+    document.getElementById('massInp'+i).value='';
+  }
+  recalc();
+}
+
+// Mode B: user typed a mass → auto-calc %
+function onMassInput(i){
+  if(currentMode!=='B') return; // in A, mass is read-only
+  const m=parseFloat(document.getElementById('massInp'+i).value);
+  const fac=currentUnit==='g'?1000:1;
+
+  // We need a total mass to compute %. Use OD if available, else sum all masses.
+  if(!isNaN(m)){
+    // We'll recalc total after collecting all, then derive %
+    recalc(); // recalc handles % derivation in B
+  } else {
+    document.getElementById('pctInp'+i).value='';
+    recalc();
+  }
+}
+
+// ══ MAIN RECALC ════════════════════════════════════════
+function recalc(){
+  const fac=currentUnit==='g'?1000:1;
+  let pcts=[], masses=[];
+
+  if(currentMode==='A'){
+    // user gave %, mass is derived
+    pcts=SIEVES.map((_,i)=>{const v=parseFloat(document.getElementById('pctInp'+i).value);return isNaN(v)?0:v;});
+    masses=SIEVES.map((_,i)=>{const v=parseFloat(document.getElementById('massInp'+i).value);return isNaN(v)?0:v;});
+  } else {
+    // user gave mass, derive %
+    masses=SIEVES.map((_,i)=>{const v=parseFloat(document.getElementById('massInp'+i).value);return isNaN(v)?0:v;});
+    const totM=masses.reduce((a,b)=>a+b,0);
+    if(totM>0){
+      pcts=masses.map(m=>(m/totM)*100);
+      // write derived % back into read-only fields
+      SIEVES.forEach((_,i)=>{
+        const el=document.getElementById('pctInp'+i);
+        el.value=pcts[i]>0?pcts[i].toFixed(3):'';
+      });
+    } else {
+      pcts=new Array(N).fill(0);
+      SIEVES.forEach((_,i)=>document.getElementById('pctInp'+i).value='');
+    }
+  }
+
+  const totP=pcts.reduce((a,b)=>a+b,0);
+  const totM=masses.reduce((a,b)=>a+b,0);
+
+  // total row
+  const unitLabel=currentUnit;
+  document.getElementById('tPct').textContent =totP>0?totP.toFixed(2)+'%':'—';
+  document.getElementById('tMass').textContent=totM>0?totM.toFixed(currentUnit==='g'?2:5)+' '+unitLabel:'—';
+  const totOk=Math.abs(totP-100)<0.5;
+  document.getElementById('tStatus').innerHTML=totP>0?`<span class="pf ${totOk?'pass':'fail'}">${totOk?'OK':'CHECK'}</span>`:'—';
+  document.getElementById('warnRow').style.display=(!totOk&&totP>0)?'':'none';
+
+  // cumulative
+  let cumR=0;
+  const cpArr=[],crArr=[];
+  pcts.forEach((r,i)=>{
+    cumR+=r;
+    crArr.push(cumR);
+    const cp=Math.max(0,totP-cumR);
+    cpArr.push(cp);
+    document.getElementById('cr'+i).textContent=totP>0?cumR.toFixed(2)+'%':'—';
+    document.getElementById('cp'+i).textContent=totP>0?cp.toFixed(2)+'%':'—';
+    const s=SIEVES[i];
+    if(s.lo!==null&&totP>0){
+      const pass=cp>=s.lo&&cp<=s.hi;
+      document.getElementById('st'+i).innerHTML=`<span class="pf ${pass?'pass':'fail'}">${pass?'PASS':'FAIL'}</span>`;
+    } else document.getElementById('st'+i).innerHTML='<span class="pf na">—</span>';
+  });
+
+  // FM (#4→#100 = idx 0-5)
+  const fmSum=[0,1,2,3,4,5].reduce((a,i)=>a+crArr[i],0);
+  const fm=fmSum/100;
+  const fmEl=document.getElementById('fmVal');
+  fmEl.textContent=totP>0?fm.toFixed(2):'—';
+  fmEl.className='kpi-val pulse';
+  setTimeout(()=>fmEl.classList.remove('pulse'),280);
+  document.getElementById('fmSub').textContent=
+    totP<1?'Enter data in the table below':
+    fm<2.3?'FM < 2.3 — Very Fine Sand':
+    fm<=3.1?'FM 2.3–3.1 — ASTM C33 ✓':'FM > 3.1 — Very Coarse Sand';
+  document.getElementById('fmSub').style.color=(fm>=2.3&&fm<=3.1&&totP>0)?'var(--green)':'var(--muted)';
+
+  // Grading
+  const allPass=[0,1,2,3,4,5].every(i=>{const s=SIEVES[i];return s.lo===null||(cpArr[i]>=s.lo&&cpArr[i]<=s.hi);});
+  let isGap=false;
+  for(let i=0;i<N-2;i++){
+    if(pcts[i]<2&&pcts[i+1]>18)isGap=true;
+    if(pcts[i]>18&&pcts[i+1]<2&&i<N-3)isGap=true;
+  }
+  const top2=[...pcts.slice(0,6)].sort((a,b)=>b-a).slice(0,2).reduce((a,b)=>a+b,0);
+  const isPoor=top2>75&&!isGap;
+  const gl=document.getElementById('gradeLabel'),gd=document.getElementById('gradeDesc');
+  gl.className='gpill';
+  if(totP<1){gl.classList.add('g-na');gl.textContent='—';gd.textContent='—';}
+  else if(isGap){gl.classList.add('g-gap');gl.textContent='⚠ GAP GRADED';gd.textContent='Missing sizes — gap in curve. Not ideal for structural concrete.';}
+  else if(allPass&&fm>=2.3&&fm<=3.1){gl.classList.add('g-well');gl.textContent='✔ WELL GRADED';gd.textContent='Smooth continuous distribution. Meets ASTM C33 — excellent for concrete.';}
+  else if(isPoor){gl.classList.add('g-poor');gl.textContent='△ POORLY GRADED';gd.textContent='Narrow size range. High void ratio — may need extra paste/fines.';}
+  else{gl.classList.add('g-poor');gl.textContent='△ NON-CONFORMING';gd.textContent='Outside ASTM C33 limits or FM range. Review failing sieves.';}
+
+  const cv=document.getElementById('compVal');
+  cv.textContent=totP<1?'—':(allPass?'✔ YES':'✗ NO');
+  cv.style.color=totP<1?'var(--muted)':(allPass?'var(--green)':'var(--red)');
+  document.getElementById('compSub').textContent=totP<1?'—':(allPass?'All sieves within C33 limits':'One or more sieves outside limits');
+
+  // Stats
+  const mmArr=SIEVES.map(s=>s.mm);
+  function getDx(p){
+    for(let i=0;i<N-1;i++){
+      const p1=cpArr[i],p2=cpArr[i+1]??0,m1=mmArr[i],m2=mmArr[i+1];
+      if(p<=p1&&p>=p2&&p1!==p2)return m2+((p-p2)/(p1-p2))*(m1-m2);
+    }
+    return null;
+  }
+  const d10=getDx(10),d30=getDx(30),d60=getDx(60);
+  document.getElementById('sSum').textContent=totP>0?fmSum.toFixed(2):'—';
+  document.getElementById('sD10').textContent=d10?d10.toFixed(3)+' mm':'—';
+  document.getElementById('sD30').textContent=d30?d30.toFixed(3)+' mm':'—';
+  document.getElementById('sD60').textContent=d60?d60.toFixed(3)+' mm':'—';
+  if(d10&&d60){
+    document.getElementById('sCu').textContent=(d60/d10).toFixed(2);
+    document.getElementById('sCc').textContent=d30?(d30*d30/(d60*d10)).toFixed(2):'—';
+  }else{document.getElementById('sCu').textContent='—';document.getElementById('sCc').textContent='—';}
+
+  // Chart
+  chart.data.datasets[2].data=cpArr;
+  chart.update('active');
+}
+
+// ══ PRINT ══════════════════════════════════════════════
+function printReport(){
+  const fname  =document.getElementById('mFile').value.trim()||'Sieve-Analysis-Report';
+  const proj   =document.getElementById('mProj').value.trim()||'—';
+  const dateVal=document.getElementById('mDate').value;
+  const dateStr=dateVal
+    ?new Date(dateVal+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})
+    :new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+  const modeStr=currentMode==='A'?'Mode A — % Retained Input':'Mode B — Mass Retained Input ('+currentUnit+')';
+
+  document.getElementById('pFile').textContent=fname;
+  document.getElementById('pProj').textContent=proj;
+  document.getElementById('pDate').textContent=dateStr;
+  document.getElementById('pMode').textContent=modeStr;
+  document.getElementById('pFootR').textContent=`File: ${fname} | ${dateStr} | MD R Rafi`;
+
+  ['pTop','pMeta'].forEach(id=>document.getElementById(id).style.display='flex');
+  document.getElementById('pFoot').style.display='flex';
+
+  const orig=document.title;
+  document.title=fname;
+  window.print();
+  setTimeout(()=>{
+    document.title=orig;
+    ['pTop','pMeta'].forEach(id=>document.getElementById(id).style.display='none');
+    document.getElementById('pFoot').style.display='none';
+  },1200);
+}
+
+// ══ RESET ══════════════════════════════════════════════
+function clearTable(){
+  SIEVES.forEach((_,i)=>{
+    document.getElementById('massInp'+i).value='';
+    document.getElementById('pctInp'+i).value='';
+    document.getElementById('cr'+i).textContent='—';
+    document.getElementById('cp'+i).textContent='—';
+    document.getElementById('st'+i).innerHTML='<span class="pf na">—</span>';
+  });
+  document.getElementById('tPct').textContent='—';
+  document.getElementById('tMass').textContent='—';
+  document.getElementById('tStatus').textContent='—';
+  document.getElementById('warnRow').style.display='none';
+  ['fmVal','compVal'].forEach(id=>{document.getElementById(id).textContent='—';document.getElementById(id).style.color='';});
+  document.getElementById('fmSub').textContent='Enter data in the table below';
+  document.getElementById('fmSub').style.color='';
+  document.getElementById('gradeLabel').className='gpill g-na';
+  document.getElementById('gradeLabel').textContent='—';
+  document.getElementById('gradeDesc').textContent='—';
+  document.getElementById('compSub').textContent='—';
+  ['sSum','sD10','sD30','sD60','sCu','sCc'].forEach(id=>document.getElementById(id).textContent='—');
+  chart.data.datasets[2].data=new Array(N).fill(null);
+  chart.update();
+}
+
+function resetAll(){
+  ['massSSD','massOD','absorp'].forEach(id=>document.getElementById(id).value='');
+  ['dOD','dSSD','dAbs','dWater'].forEach(id=>document.getElementById(id).textContent='—');
+  lastOD=null;
+  clearTable();
+}
+
+// ══ INIT ═══════════════════════════════════════════════
+document.getElementById('mDate').value=new Date().toISOString().split('T')[0];
+document.getElementById('th-unit').textContent='(kg)';
+// Set initial mode A state
+setMode('A');
+</script>
+</body>
+</html>
